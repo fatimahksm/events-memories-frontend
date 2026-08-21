@@ -23,7 +23,7 @@ export function EventWizard({ owners, locale, onCreated }: { owners: Owner[]; lo
   const [uploading, setUploading] = useState(false);
   const [fullPreview, setFullPreview] = useState(false);
   const [error, setError] = useState('');
-  const [result, setResult] = useState<{ event: EventSummary; publicUrl: string; adminUrl: string; qr: string } | null>(null);
+  const [result, setResult] = useState<{ event: EventSummary; publicUrl: string; adminUrl: string; ownerUrl: string; qr: string } | null>(null);
   const [details, setDetails] = useState<Details>(emptyDetails);
   const [theme, setTheme] = useState<EventTheme>(defaultTheme);
   const canContinue = useMemo(() => step !== 0 || Boolean(details.ownerId && details.names.trim() && details.expiresAt && details.mediaDeleteAt), [details, step]);
@@ -82,8 +82,9 @@ export function EventWizard({ owners, locale, onCreated }: { owners: Owner[]; lo
       const origin = window.location.origin;
       const publicUrl = `${origin}/${locale}/e/${created.slug}`;
       const adminUrl = `${origin}/${locale}/admin?event=${created.id}`;
+      const ownerUrl = `${origin}/${locale}/event-access?token=${created.accessToken}`;
       const qr = await QRCode.toDataURL(publicUrl, { width: 320, margin: 1, color: { dark: '#07142F', light: '#FFFFFF' }, errorCorrectionLevel: 'H' });
-      setResult({ event: created, publicUrl, adminUrl, qr });
+      setResult({ event: created, publicUrl, adminUrl, ownerUrl, qr });
       onCreated(created);
     } catch (err) {
       setError(errorMessage(err, 'The event could not be published. Nothing was partially saved; review the information and try again.'));
@@ -100,7 +101,7 @@ export function EventWizard({ owners, locale, onCreated }: { owners: Owner[]; lo
     <section className="publish-success">
       <div className="success-orbit"><span /></div><p>EVENT PUBLISHED</p><h2>{result.event.names} is ready</h2>
       <span>The exact design shown in preview is now live.</span>
-      <div className="publish-result-grid"><div className="qr-card"><img src={result.qr} alt="Event QR code" /><a className="button button--outline" href={result.qr} download={`${result.event.slug}-qr.png`}>Download QR code</a></div><div className="link-stack"><CopyLink label="Public guest link" value={result.publicUrl} /><CopyLink label="Admin management link" value={result.adminUrl} /><div className="publish-actions"><a className="button button--primary" href={result.publicUrl} target="_blank">Open public event</a><button className="button button--ghost" onClick={reset}>Create another event</button></div></div></div>
+      <div className="publish-result-grid"><div className="qr-card"><img src={result.qr} alt="Event QR code" /><a className="button button--outline" href={result.qr} download={`${result.event.slug}-qr.png`}>Download QR code</a></div><div className="link-stack"><CopyLink label="Public guest link" value={result.publicUrl} /><CopyLink label="Owner access link (this event only)" value={result.ownerUrl} /><CopyLink label="Admin management link" value={result.adminUrl} /><div className="publish-actions"><a className="button button--primary" href={result.publicUrl} target="_blank">Open public event</a><button className="button button--ghost" onClick={reset}>Create another event</button></div></div></div>
     </section>
   );
 
