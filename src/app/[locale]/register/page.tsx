@@ -1,0 +1,14 @@
+'use client';
+import Link from 'next/link';
+import { FormEvent,useState } from 'react';
+import { useParams,useRouter } from 'next/navigation';
+import { apiFetch,errorMessage } from '@/lib/api-client';
+import { getDictionary,isLocale } from '@/i18n/dictionary';
+import { BrandLogo } from '@/components/ui/BrandLogo';
+
+export default function RegisterPage(){
+ const params=useParams<{locale:string}>();const locale=isLocale(params.locale)?params.locale:'en';const d=getDictionary(locale);const router=useRouter();
+ const[error,setError]=useState('');const[busy,setBusy]=useState(false);
+ async function submit(e:FormEvent<HTMLFormElement>){e.preventDefault();setBusy(true);setError('');const fd=new FormData(e.currentTarget);try{await apiFetch('/auth/register',{method:'POST',body:JSON.stringify({displayName:fd.get('name'),email:fd.get('email'),password:fd.get('password')})});router.replace(`/${locale}/dashboard`)}catch(err){setError(errorMessage(err,d.upload.genericError))}finally{setBusy(false)}}
+ return <main className="auth-page" dir={locale==='ar'?'rtl':'ltr'}><section className="auth-visual auth-visual--register"><BrandLogo inverse/><div className="auth-visual__content"><span>BRAVA OWNER WORKSPACE</span><h2>Build an event guests will remember.</h2><p>Create branded guest experiences, receive media securely, and manage every memory from one workspace.</p><div className="auth-feature-list"><div><i/>Guided event creation</div><div><i/>Secure photo and video delivery</div><div><i/>Private owner dashboard</div></div></div><small className="auth-visual__footer">Professional event infrastructure</small></section><section className="auth-form-side"><div className="auth-mobile-brand"><BrandLogo/></div><form className="auth-card" onSubmit={submit}><span className="auth-eyebrow">CREATE OWNER ACCOUNT</span><h1>{d.auth.registerTitle}</h1><p>{d.auth.registerSubtitle}</p><label className="field"><span>{d.auth.name}</span><input name="name" autoComplete="name" required maxLength={120} placeholder="Your name or company"/></label><label className="field"><span>{d.auth.email}</span><input name="email" type="email" autoComplete="email" required maxLength={190} placeholder="name@company.com"/></label><label className="field"><span>{d.auth.password}</span><input name="password" type="password" autoComplete="new-password" minLength={10} maxLength={72} required placeholder="Create a secure password"/><small>{d.auth.passwordHint}</small></label>{error&&<div className="notice notice--error" role="alert"><strong>Account not created</strong><span>{error}</span></div>}<button className="button button--primary button--wide" disabled={busy}>{busy?d.common.loading:d.auth.register}</button><p className="auth-switch">{d.auth.hasAccount} <Link href={`/${locale}/login`}>{d.auth.loginLink}</Link></p></form></section></main>
+}
