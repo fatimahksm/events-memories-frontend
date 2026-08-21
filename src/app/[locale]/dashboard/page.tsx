@@ -8,6 +8,7 @@ import { getDictionary, isLocale } from '@/i18n/dictionary';
 import type { EventSummary } from '@/types/event';
 import type { MediaItem, MediaPage, Wish } from '@/types/media';
 import { DashboardShell } from '@/components/dashboard/DashboardShell';
+import { ThemeEditor } from '@/components/dashboard/ThemeEditor';
 
 type Me = { role: string };
 
@@ -27,6 +28,7 @@ export default function OwnerDashboard() {
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  const [editingDesign, setEditingDesign] = useState(false);
 
   const loadEvents = useCallback(async () => {
     try {
@@ -140,7 +142,7 @@ export default function OwnerDashboard() {
             <>
               <section className="event-summary-card">
                 <div><span>{selected.active ? 'ACTIVE' : 'EXPIRED'}</span><h2>{selected.names}</h2><p>{d.dashboard.deleteNotice}: {new Date(selected.mediaDeleteAt).toLocaleDateString(locale)}</p></div>
-                <div className="summary-actions"><a className="button button--outline" target="_blank" href={`/${locale}/e/${selected.slug}`}>{d.dashboard.publicLink}</a><a className="button button--dark" href={`${appConfig.apiBaseUrl}/owner/events/${selected.id}/download-all`}>{d.dashboard.downloadAll}</a></div>
+                <div className="summary-actions"><a className="button button--outline" target="_blank" href={`/${locale}/e/${selected.slug}`}>{d.dashboard.publicLink}</a><button className="button button--outline" onClick={() => setEditingDesign(true)}>Edit design & content</button><a className="button button--dark" href={`${appConfig.apiBaseUrl}/owner/events/${selected.id}/download-all`}>{d.dashboard.downloadAll}</a></div>
               </section>
               <div className="dashboard-tabs"><button className={tab === 'media' ? 'active' : ''} onClick={() => setTab('media')}>{d.dashboard.media} ({mediaTotal})</button><button className={tab === 'wishes' ? 'active' : ''} onClick={() => setTab('wishes')}>{d.dashboard.wishes} ({wishes.length})</button></div>
               {tab === 'media' ? (
@@ -159,6 +161,22 @@ export default function OwnerDashboard() {
             </>
           )}
         </>
+      )}
+      {editingDesign && selected && (
+        <div className="drawer-backdrop" onMouseDown={(event) => event.currentTarget === event.target && setEditingDesign(false)}>
+          <aside className="editor-drawer">
+            <button className="drawer-close" onClick={() => setEditingDesign(false)} aria-label="Close">Close</button>
+            <ThemeEditor
+              event={selected}
+              dictionary={d}
+              scope="owner"
+              onSaved={(saved) => {
+                setSelected(saved);
+                setEvents((current) => current.map((event) => (event.id === saved.id ? saved : event)));
+              }}
+            />
+          </aside>
+        </div>
       )}
     </DashboardShell>
   );
