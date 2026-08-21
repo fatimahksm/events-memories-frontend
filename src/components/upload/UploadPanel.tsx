@@ -1,7 +1,7 @@
 'use client';
 import { ChangeEvent, DragEvent, useMemo, useRef, useState } from 'react';
 import { appConfig } from '@/config/app-config';
-import { apiFetch,errorMessage } from '@/lib/api-client';
+import { apiFetch,errorMessage,ApiError } from '@/lib/api-client';
 import { validateUploadFile } from '@/lib/upload-validation';
 import type { Dictionary } from '@/i18n/dictionary';
 import type { MediaVisibility, SelectedUploadFile } from '@/types/upload';
@@ -16,10 +16,11 @@ export function UploadPanel({dictionary,eventSlug,onClose,onUploaded}:{dictionar
  function onDrop(e:DragEvent){e.preventDefault();add(Array.from(e.dataTransfer.files??[]));}
  function patch(id:string,data:Partial<SelectedUploadFile>){setFiles(c=>c.map(f=>f.id===id?{...f,...data}:f));}
  async function uploadOne(item:SelectedUploadFile){patch(item.id,{state:'requesting',error:undefined});try{
-   const s=await retry(()=>apiFetch<{uploadUrl:string;mediaId:string}>(`/public/events/${eventSlug}/uploads/session`,{method:'POST',headers:{'X-Visitor-Id':getVisitorId()},body:JSON.stringify({clientUploadId:item.id,fileName:item.file.name,contentType:item.file.type,size:item.file.size,visibility,guestName:guestName.trim()||null})}),appConfig.uploads.maxRetries);
-   await retry(()=>uploadWithProgress(s.uploadUrl,item.file,p=>patch(item.id,{state:'uploading',progress:p}),xhr=>running.current.set(item.id,xhr)),appConfig.uploads.maxRetries);
+   const s=await retry(()=>apiFetch<{uploadUrl:string;mediaId:string}>(`/public/events/${eventSlug}/uploads/session`,{method:'POST',headers:{'X-Visitor-Id':getVisitorId()},body:JSON.stringify({clientUploadId:item.id,fileName:item.file.name,contentType:item.file.type,size:item.file.size,visibility,guestName:guestName.trim()||null})}),appConfig.uploads.maxRetries,isRetryable);
+   let lastProgress=-1;
+   await retry(()=>uploadWithProgress(s.uploadUrl,item.file,p=>{if(p!==lastProgress){lastProgress=p;patch(item.id,{state:'uploading',progress:p});}},xhr=>running.current.set(item.id,xhr)),appConfig.uploads.maxRetries,isRetryable);
    running.current.delete(item.id);patch(item.id,{state:'processing',progress:100});
-   await retry(()=>apiFetch(`/public/events/${eventSlug}/uploads/${s.mediaId}/finalize`,{method:'POST',headers:{'X-Visitor-Id':getVisitorId()}}),appConfig.uploads.maxRetries);
+   await retry(()=>apiFetch(`/public/events/${eventSlug}/uploads/${s.mediaId}/finalize`,{method:'POST',headers:{'X-Visitor-Id':getVisitorId()}}),appConfig.uploads.maxRetries,isRetryable);
    patch(item.id,{state:'success',progress:100});
  }catch(err){running.current.delete(item.id);patch(item.id,{state:'error',error:errorMessage(err,dictionary.upload.genericError)});}}
  async function uploadAll(){const queue=files.filter(f=>(f.state==='idle'||f.state==='error')&&!f.error);setCompleted(false);await runPool(queue,Math.max(1,appConfig.uploads.maxConcurrentUploads),uploadOne);setCompleted(true);onUploaded();}
@@ -38,6 +39,9 @@ export function UploadPanel({dictionary,eventSlug,onClose,onUploaded}:{dictionar
  </div></div>;
 }
 async function runPool<T>(items:T[],concurrency:number,worker:(item:T)=>Promise<void>){let next=0;async function consume(){while(true){const i=next++;if(i>=items.length)return;await worker(items[i]);}}await Promise.all(Array.from({length:Math.min(concurrency,items.length)},consume));}
-async function retry<T>(fn:()=>Promise<T>,maxRetries:number){let last:unknown;for(let attempt=0;attempt<=maxRetries;attempt++){try{return await fn();}catch(e){last=e;if(attempt===maxRetries)break;await new Promise(r=>setTimeout(r,Math.min(4000,350*2**attempt+Math.random()*250)));}}throw last;}
-function uploadWithProgress(url:string,file:File,onProgress:(p:number)=>void,onStart:(xhr:XMLHttpRequest)=>void){return new Promise<void>((resolve,reject)=>{const xhr=new XMLHttpRequest();onStart(xhr);xhr.open('PUT',url);xhr.setRequestHeader('Content-Type',file.type);xhr.upload.onprogress=e=>{if(e.lengthComputable)onProgress(Math.round(e.loaded/e.total*100));};xhr.onload=()=>xhr.status>=200&&xhr.status<300?resolve():reject(new Error(`Upload failed: ${xhr.status}`));xhr.onerror=()=>reject(new Error('Network error'));xhr.onabort=()=>reject(new Error('Upload cancelled'));xhr.send(file);});}
+async function retry<T>(fn:()=>Promise<T>,maxRetries:number,isRetryableErr:(e:unknown)=>boolean=()=>true){let last:unknown;for(let attempt=0;attempt<=maxRetries;attempt++){try{return await fn();}catch(e){last=e;if(attempt===maxRetries||!isRetryableErr(e))break;await new Promise(r=>setTimeout(r,Math.min(4000,350*2**attempt+Math.random()*250)));}}throw last;}
+/** Skip retrying failures the server (or a virus/format check) has already permanently rejected — only network hiccups, timeouts, and server errors are worth another attempt. */
+function isRetryable(e:unknown){if(e instanceof ApiError)return e.status===0||e.status>=500||e.status===408||e.status===429;if(e instanceof UploadHttpError)return e.status===0||e.status>=500||e.status===408||e.status===429;return true;}
+class UploadHttpError extends Error{constructor(public readonly status:number,message:string){super(message);}}
+function uploadWithProgress(url:string,file:File,onProgress:(p:number)=>void,onStart:(xhr:XMLHttpRequest)=>void){return new Promise<void>((resolve,reject)=>{const xhr=new XMLHttpRequest();onStart(xhr);xhr.open('PUT',url);xhr.timeout=appConfig.uploadTimeoutMs;xhr.setRequestHeader('Content-Type',file.type);xhr.upload.onprogress=e=>{if(e.lengthComputable)onProgress(Math.round(e.loaded/e.total*100));};xhr.onload=()=>xhr.status>=200&&xhr.status<300?resolve():reject(new UploadHttpError(xhr.status,`Upload failed: ${xhr.status}`));xhr.onerror=()=>reject(new UploadHttpError(0,'Network error'));xhr.onabort=()=>reject(new UploadHttpError(0,'Upload cancelled'));xhr.ontimeout=()=>reject(new UploadHttpError(0,'Upload timed out'));xhr.send(file);});}
 function formatBytes(b:number){return b>=1024*1024?`${(b/1024/1024).toFixed(1)} MB`:`${Math.ceil(b/1024)} KB`;}
