@@ -9,7 +9,7 @@ export function EventHero({ event, dictionary, locale, colorMode, onToggleColorM
   const theme = event.theme;
   const arabic = locale === 'ar';
   const eventName = arabic ? event.namesAr || event.names : event.names;
-  const eventQuote = arabic ? event.quoteAr || event.quote : event.quote;
+  const eventQuote = arabic ? event.quoteAr : event.quote;
   const style = {
     '--event-text': theme.textColor,
     '--event-primary': theme.primaryColor,

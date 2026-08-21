@@ -143,8 +143,8 @@ function PublishReview({ details, theme, owners, previewStyle, onPreview }: { de
 export function EventPreview({ details, theme, style, full = false }: { details: { names: string; quote: string; namesAr: string; quoteAr: string; eventDate: string }; theme: EventTheme; style: CSSProperties; full?: boolean }) {
   const [language, setLanguage] = useState<'en' | 'ar'>('en');
   const arabic = language === 'ar';
-  const name = arabic ? details.namesAr || details.names : details.names;
-  const quote = arabic ? details.quoteAr || details.quote : details.quote;
+  const name = arabic ? details.namesAr : details.names;
+  const quote = arabic ? details.quoteAr : details.quote;
   return <div className={`event-preview event-preview--${theme.templateKey} ${full ? 'event-preview--fullscreen' : ''}`} style={style} dir={arabic ? 'rtl' : 'ltr'}><button className="preview-language" onClick={() => setLanguage(arabic ? 'en' : 'ar')}>{arabic ? 'EN' : 'ع'}</button>{!full && <div className="preview-browser"><span /><span /><span /><em>Public guest experience</em></div>}<div className="preview-stage"><small>{arabic ? 'مساحة مشتركة للذكريات' : 'WELCOME TO OUR CELEBRATION'}</small><h2>{name || (arabic ? 'أسماء المناسبة' : 'Your event names')}</h2>{details.eventDate && <time>{new Date(`${details.eventDate}T00:00:00`).toLocaleDateString(arabic ? 'ar-LB' : undefined, { year: 'numeric', month: 'long', day: 'numeric' })}</time>}<p>{quote || (arabic ? 'ستظهر عبارة الترحيب هنا.' : 'Your welcome message will appear here.')}</p><div><button>{arabic ? 'أضف ذكرياتك' : 'Upload memories'}</button><button>{arabic ? 'شاهد الألبوم' : 'View album'}</button></div></div></div>;
 }
 
