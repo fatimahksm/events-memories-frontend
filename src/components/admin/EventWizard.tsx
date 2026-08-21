@@ -23,7 +23,7 @@ export function EventWizard({ owners, locale, onCreated }: { owners: Owner[]; lo
   const [uploading, setUploading] = useState(false);
   const [fullPreview, setFullPreview] = useState(false);
   const [error, setError] = useState('');
-  const [result, setResult] = useState<{ event: EventSummary; publicUrl: string; adminUrl: string; qr: string } | null>(null);
+  const [result, setResult] = useState<{ event: EventSummary; publicUrl: string; adminUrl: string; ownerUrl: string; qr: string } | null>(null);
   const [details, setDetails] = useState<Details>(emptyDetails);
   const [theme, setTheme] = useState<EventTheme>(defaultTheme);
   const canContinue = useMemo(() => step !== 0 || Boolean(details.ownerId && details.names.trim() && details.expiresAt && details.mediaDeleteAt), [details, step]);
@@ -82,8 +82,9 @@ export function EventWizard({ owners, locale, onCreated }: { owners: Owner[]; lo
       const origin = window.location.origin;
       const publicUrl = `${origin}/${locale}/e/${created.slug}`;
       const adminUrl = `${origin}/${locale}/admin?event=${created.id}`;
+      const ownerUrl = `${origin}/${locale}/event-access?token=${created.accessToken}`;
       const qr = await QRCode.toDataURL(publicUrl, { width: 320, margin: 1, color: { dark: '#07142F', light: '#FFFFFF' }, errorCorrectionLevel: 'H' });
-      setResult({ event: created, publicUrl, adminUrl, qr });
+      setResult({ event: created, publicUrl, adminUrl, ownerUrl, qr });
       onCreated(created);
     } catch (err) {
       setError(errorMessage(err, 'The event could not be published. Nothing was partially saved; review the information and try again.'));
@@ -100,7 +101,7 @@ export function EventWizard({ owners, locale, onCreated }: { owners: Owner[]; lo
     <section className="publish-success">
       <div className="success-orbit"><span /></div><p>EVENT PUBLISHED</p><h2>{result.event.names} is ready</h2>
       <span>The exact design shown in preview is now live.</span>
-      <div className="publish-result-grid"><div className="qr-card"><img src={result.qr} alt="Event QR code" /><a className="button button--outline" href={result.qr} download={`${result.event.slug}-qr.png`}>Download QR code</a></div><div className="link-stack"><CopyLink label="Public guest link" value={result.publicUrl} /><CopyLink label="Admin management link" value={result.adminUrl} /><div className="publish-actions"><a className="button button--primary" href={result.publicUrl} target="_blank">Open public event</a><button className="button button--ghost" onClick={reset}>Create another event</button></div></div></div>
+      <div className="publish-result-grid"><div className="qr-card"><img src={result.qr} alt="Event QR code" /><a className="button button--outline" href={result.qr} download={`${result.event.slug}-qr.png`}>Download QR code</a></div><div className="link-stack"><CopyLink label="Public guest link" value={result.publicUrl} /><CopyLink label="Owner access link (this event only)" value={result.ownerUrl} /><CopyLink label="Admin management link" value={result.adminUrl} /><div className="publish-actions"><a className="button button--primary" href={result.publicUrl} target="_blank">Open public event</a><button className="button button--ghost" onClick={reset}>Create another event</button></div></div></div>
     </section>
   );
 
@@ -140,11 +141,11 @@ function PublishReview({ details, theme, owners, previewStyle, onPreview }: { de
   return <div className="wizard-panel review-panel"><div className="panel-heading"><span>03</span><div><h3>Ready to publish</h3><p>Confirm the information and the exact saved design.</p></div></div><div className="publish-review-layout"><div className="review-grid"><Review label="Event" value={details.names} /><Review label="Owner" value={owners.find((owner) => owner.id === details.ownerId)?.displayName || 'Not selected'} /><Review label="Public slug" value={details.slug || 'Generated automatically'} /><Review label="Template" value={theme.templateKey} /><Review label="Guest access" value={details.expiresAt ? new Date(details.expiresAt).toLocaleString() : 'Not set'} /><Review label="Media deletion" value={details.mediaDeleteAt ? new Date(details.mediaDeleteAt).toLocaleString() : 'Not set'} /></div><div className="review-preview"><EventPreview details={details} theme={theme} style={previewStyle} /><button className="button button--outline" onClick={onPreview}>Open full screen</button></div></div><div className="security-note"><strong>Atomic secure publishing</strong><p>The event and its complete design are saved together. If any part fails, no unfinished event is created.</p></div></div>;
 }
 
-function EventPreview({ details, theme, style, full = false }: { details: Pick<Details, 'names' | 'quote' | 'namesAr' | 'quoteAr' | 'eventDate'>; theme: EventTheme; style: CSSProperties; full?: boolean }) {
+export function EventPreview({ details, theme, style, full = false }: { details: { names: string; quote: string; namesAr: string; quoteAr: string; eventDate: string }; theme: EventTheme; style: CSSProperties; full?: boolean }) {
   const [language, setLanguage] = useState<'en' | 'ar'>('en');
   const arabic = language === 'ar';
-  const name = arabic ? details.namesAr || details.names : details.names;
-  const quote = arabic ? details.quoteAr || details.quote : details.quote;
+  const name = arabic ? details.namesAr : details.names;
+  const quote = arabic ? details.quoteAr : details.quote;
   return <div className={`event-preview event-preview--${theme.templateKey} ${full ? 'event-preview--fullscreen' : ''}`} style={style} dir={arabic ? 'rtl' : 'ltr'}><button className="preview-language" onClick={() => setLanguage(arabic ? 'en' : 'ar')}>{arabic ? 'EN' : 'ع'}</button>{!full && <div className="preview-browser"><span /><span /><span /><em>Public guest experience</em></div>}<div className="preview-stage"><small>{arabic ? 'مساحة مشتركة للذكريات' : 'WELCOME TO OUR CELEBRATION'}</small><h2>{name || (arabic ? 'أسماء المناسبة' : 'Your event names')}</h2>{details.eventDate && <time>{new Date(`${details.eventDate}T00:00:00`).toLocaleDateString(arabic ? 'ar-LB' : undefined, { year: 'numeric', month: 'long', day: 'numeric' })}</time>}<p>{quote || (arabic ? 'ستظهر عبارة الترحيب هنا.' : 'Your welcome message will appear here.')}</p><div><button>{arabic ? 'أضف ذكرياتك' : 'Upload memories'}</button><button>{arabic ? 'شاهد الألبوم' : 'View album'}</button></div></div></div>;
 }
 

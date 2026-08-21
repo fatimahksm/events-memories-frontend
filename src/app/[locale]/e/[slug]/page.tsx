@@ -19,7 +19,7 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
   const icon = event.theme.backgroundImageUrl || '/brand/brava-logo.png';
   return {
     title: locale === 'ar' ? event.namesAr || event.names : event.names,
-    description: (locale === 'ar' ? event.quoteAr || event.quote : event.quote) || `Share memories from ${event.names}`,
+    description: (locale === 'ar' ? event.quoteAr : event.quote) || `Share memories from ${event.names}`,
     icons: { icon, shortcut: icon, apple: icon },
   };
 }
