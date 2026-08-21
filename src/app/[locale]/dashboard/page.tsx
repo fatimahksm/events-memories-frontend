@@ -163,20 +163,17 @@ export default function OwnerDashboard() {
         </>
       )}
       {editingDesign && selected && (
-        <div className="drawer-backdrop" onMouseDown={(event) => event.currentTarget === event.target && setEditingDesign(false)}>
-          <aside className="editor-drawer">
-            <button className="drawer-close" onClick={() => setEditingDesign(false)} aria-label="Close">Close</button>
-            <ThemeEditor
-              event={selected}
-              dictionary={d}
-              scope="owner"
-              onSaved={(saved) => {
-                setSelected(saved);
-                setEvents((current) => current.map((event) => (event.id === saved.id ? saved : event)));
-              }}
-            />
-          </aside>
-        </div>
+        <ThemeEditor
+          event={selected}
+          dictionary={d}
+          scope="owner"
+          onClose={() => setEditingDesign(false)}
+          onSaved={(saved) => {
+            setSelected(saved);
+            setEvents((current) => current.map((event) => (event.id === saved.id ? saved : event)));
+            setEditingDesign(false);
+          }}
+        />
       )}
     </DashboardShell>
   );
