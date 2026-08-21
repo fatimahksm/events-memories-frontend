@@ -4,6 +4,7 @@ import { ChangeEvent, CSSProperties, FormEvent, useEffect, useMemo, useState } f
 import QRCode from 'qrcode';
 import { apiFetch, errorMessage } from '@/lib/api-client';
 import { EventPreview } from '@/components/admin/EventWizard';
+import { FONT_OPTIONS } from '@/lib/fonts';
 import type { EventSummary } from '@/types/event';
 import type { Dictionary } from '@/i18n/dictionary';
 
@@ -78,7 +79,7 @@ export function ThemeEditor({ event, dictionary, scope = 'admin', onSaved, onClo
               <label className="field"><span>{dictionary.admin.accent}</span><input type="color" value={theme.accentColor} onChange={(change) => setTheme({ ...theme, accentColor: change.target.value })} /></label>
               <label className="field"><span>{dictionary.admin.text}</span><input type="color" value={theme.textColor} onChange={(change) => setTheme({ ...theme, textColor: change.target.value })} /></label>
             </div>
-            <label className="field"><span>{dictionary.admin.font}</span><select value={theme.fontFamily} onChange={(change) => setTheme({ ...theme, fontFamily: change.target.value })}><option value="Georgia, serif">Georgia</option><option value="Inter, sans-serif">Inter</option><option value="'Times New Roman', serif">Classic Serif</option></select></label>
+            <label className="field"><span>{dictionary.admin.font}</span><select value={theme.fontFamily} onChange={(change) => setTheme({ ...theme, fontFamily: change.target.value })}>{FONT_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></label>
             <label className="field"><span>{dictionary.admin.overlay}: {theme.overlayOpacity.toFixed(2)}</span><input type="range" min="0" max="0.85" step="0.05" value={theme.overlayOpacity} onChange={(change) => setTheme({ ...theme, overlayOpacity: Number(change.target.value) })} /></label>
             <label className="field"><span>{dictionary.admin.radius}: {theme.buttonRadiusPx}px</span><input type="range" min="0" max="999" step="4" value={theme.buttonRadiusPx} onChange={(change) => setTheme({ ...theme, buttonRadiusPx: Number(change.target.value) })} /></label>
             <div className="segmented-field"><span>Page mode</span><div className="segmented"><button type="button" className={theme.colorMode === 'DARK' ? 'active' : ''} onClick={() => setTheme({ ...theme, colorMode: 'DARK' })}>Dark</button><button type="button" className={theme.colorMode === 'LIGHT' ? 'active' : ''} onClick={() => setTheme({ ...theme, colorMode: 'LIGHT' })}>Light</button></div></div>
