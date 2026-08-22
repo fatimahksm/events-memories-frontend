@@ -20,6 +20,9 @@ async function createEventForOwner(page: Page, ownerName: string, names: string)
 
 test('the owner dashboard is a single-event hero, not a self-service create form', async ({ page }) => {
   await loginAsAdmin(page);
+  // Super Admin's own sidebar must stay the plain, untinted default — theming is owner-only.
+  await expect(page.locator('.app-sidebar--themed')).toHaveCount(0);
+
   const ownerName = `Hero Owner ${Date.now()}`;
   const owner = await createOwner(page, ownerName);
   const email: string = owner.email;
@@ -43,6 +46,7 @@ test('the owner dashboard is a single-event hero, not a self-service create form
   await page.waitForURL('**/dashboard', { timeout: 10000 });
 
   await expect(page.locator('.owner-event-form')).toHaveCount(0);
+  await expect(page.locator('.app-sidebar--themed')).toBeVisible();
   await expect(page.locator('.event-hero--owner')).toBeVisible();
   await expect(page.locator('.event-hero--owner h1')).toHaveText(eventName);
   await expect(page.locator('.event-hero--owner')).toContainText('LIVE');

@@ -103,7 +103,7 @@ export default function OwnerDashboard() {
   }
 
   return (
-    <DashboardShell title={d.dashboard.title} locale={locale} logoutLabel={d.common.logout}>
+    <DashboardShell title={selected?.names ?? d.dashboard.title} locale={locale} logoutLabel={d.common.logout} theme={selected?.theme}>
       {error && <p className="form-error api-alert" role="alert">{error}</p>}
       {loading ? <p>{d.common.loading}</p> : events.length === 0 ? (
         <div className="empty-card owner-empty-card"><strong>{d.dashboard.noEventsTitle}</strong><span>{d.dashboard.noEvents}</span></div>
