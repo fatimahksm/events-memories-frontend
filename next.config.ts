@@ -5,5 +5,8 @@ const securityHeaders=[
  {key:'Referrer-Policy',value:'strict-origin-when-cross-origin'},
  {key:'Permissions-Policy',value:'camera=(), microphone=(), geolocation=()'}
 ];
-const nextConfig:NextConfig={output:'standalone',images:{remotePatterns:[{protocol:'https',hostname:'**'}]},async headers(){return[{source:'/(.*)',headers:securityHeaders}]}};
+// Vercel runs its own build adapter that packages output itself; `output: 'standalone'`
+// changes what `next build` emits (its own file-tracing into `.next/standalone`) in a way
+// that breaks Vercel's adapter. Only set it for self-hosted (Docker/Render) builds.
+const nextConfig:NextConfig={...(process.env.VERCEL?{}:{output:'standalone'}),images:{remotePatterns:[{protocol:'https',hostname:'**'}]},async headers(){return[{source:'/(.*)',headers:securityHeaders}]}};
 export default nextConfig;
