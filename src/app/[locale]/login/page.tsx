@@ -17,7 +17,11 @@ function LoginForm(){
  const[event,setEvent]=useState<PublicEvent|null>(null);
  const[email,setEmail]=useState('');const[password,setPassword]=useState('');const[error,setError]=useState('');const[busy,setBusy]=useState(false);
  function routeFor(role:string){return role==='SUPER_ADMIN'?`/${locale}/admin`:`/${locale}/dashboard`}
- useEffect(()=>{apiFetch<Me>('/auth/me').then(me=>{router.replace(routeFor(me.role))}).catch(()=>{})},[locale,router]);
+ // An event-scoped login link is a deliberate request to sign in as that event's owner —
+ // skip the "already signed in, skip to dashboard" shortcut so a stale session from a
+ // different account (e.g. an admin testing the link) doesn't silently bounce them away
+ // from the form before they can enter that owner's own credentials.
+ useEffect(()=>{if(eventSlug)return;apiFetch<Me>('/auth/me').then(me=>{router.replace(routeFor(me.role))}).catch(()=>{})},[locale,router,eventSlug]);
  useEffect(()=>{if(!eventSlug)return;apiFetch<PublicEvent>(`/public/events/${eventSlug}`).then(setEvent).catch(()=>{})},[eventSlug]);
  async function submit(e:FormEvent){
   e.preventDefault();setBusy(true);setError('');
