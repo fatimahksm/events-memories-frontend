@@ -21,8 +21,22 @@ export function UploadPanel({dictionary,eventSlug,onClose,onUploaded}:{dictionar
    await retry(()=>uploadWithProgress(s.uploadUrl,item.file,p=>{if(p!==lastProgress){lastProgress=p;patch(item.id,{state:'uploading',progress:p});}},xhr=>running.current.set(item.id,xhr)),appConfig.uploads.maxRetries,isRetryable);
    running.current.delete(item.id);patch(item.id,{state:'processing',progress:100});
    await retry(()=>apiFetch(`/public/events/${eventSlug}/uploads/${s.mediaId}/finalize`,{method:'POST',headers:{'X-Visitor-Id':getVisitorId()}}),appConfig.uploads.maxRetries,isRetryable);
+   const rejected=await pollForRejection(s.mediaId);
+   if(rejected){patch(item.id,{state:'error',error:dictionary.upload.rejected});return;}
    patch(item.id,{state:'success',progress:100});
  }catch(err){running.current.delete(item.id);patch(item.id,{state:'error',error:errorMessage(err,dictionary.upload.genericError)});}}
+ /** Malware/format checks run asynchronously after finalize; poll briefly so a rejected file doesn't silently vanish behind a false "success". Gives up and assumes success after ~8s — most rejections resolve within 1-2s. */
+ async function pollForRejection(mediaId:string):Promise<boolean>{
+   for(let attempt=0;attempt<16;attempt++){
+     try{
+       const s=await apiFetch<{status:string;rejected:boolean}>(`/public/events/${eventSlug}/uploads/${mediaId}/status`,{headers:{'X-Visitor-Id':getVisitorId()}});
+       if(s.status==='READY')return false;
+       if(s.rejected)return true;
+     }catch{/* transient status-check failure; keep polling until the budget runs out */}
+     await new Promise(r=>setTimeout(r,500));
+   }
+   return false;
+ }
  async function uploadAll(){const queue=files.filter(f=>(f.state==='idle'||f.state==='error')&&!f.error);setCompleted(false);await runPool(queue,Math.max(1,appConfig.uploads.maxConcurrentUploads),uploadOne);setCompleted(true);onUploaded();}
  function remove(id:string){running.current.get(id)?.abort();running.current.delete(id);setFiles(c=>{const item=c.find(x=>x.id===id);if(item?.previewUrl)URL.revokeObjectURL(item.previewUrl);return c.filter(x=>x.id!==id)});}
  return <div className="sheet-backdrop" role="dialog" aria-modal="true" onMouseDown={e=>{if(e.currentTarget===e.target)onClose()}}><div className="upload-sheet">
