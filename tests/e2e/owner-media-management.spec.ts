@@ -70,9 +70,16 @@ test('an owner can see, download (all + individually), and delete guest uploads'
   const singleResponse = await page.request.get(downloadHref!);
   expect(singleResponse.status()).toBe(200);
 
-  // Deleting a photo the owner doesn't like removes it for good.
-  page.once('dialog', dialog => dialog.accept());
+  // Deleting a photo the owner doesn't like removes it for good, via the custom confirm dialog (not a native popup).
   await card.locator('button:has-text("Delete")').click();
+  await page.waitForSelector('.confirm-card', { timeout: 5000 });
+  await page.click('.confirm-card button:has-text("Cancel")');
+  await expect(page.locator('.confirm-card')).toHaveCount(0);
+  await expect(page.locator('.owner-media-card')).toHaveCount(1);
+
+  await card.locator('button:has-text("Delete")').click();
+  await page.waitForSelector('.confirm-card', { timeout: 5000 });
+  await page.click('.confirm-card button:has-text("Delete")');
   await expect(page.locator('.owner-media-card')).toHaveCount(0, { timeout: 10000 });
   await expect(page.locator('button:has-text("Memories (0)")')).toBeVisible();
 });

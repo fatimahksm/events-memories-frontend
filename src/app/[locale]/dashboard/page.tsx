@@ -36,6 +36,7 @@ export default function OwnerDashboard() {
   const [visibilityFilter, setVisibilityFilter] = useState<VisibilityFilter>('ALL');
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
   const loadEvents = useCallback(async () => {
     try {
@@ -90,8 +91,10 @@ export default function OwnerDashboard() {
     }
   }
 
-  async function removeMedia(id: string) {
-    if (!selected || !confirm('Delete this memory?')) return;
+  async function confirmDelete() {
+    if (!selected || !confirmDeleteId) return;
+    const id = confirmDeleteId;
+    setConfirmDeleteId(null);
     setError('');
     try {
       await apiFetch(`/owner/events/${selected.id}/media/${id}`, { method: 'DELETE' });
@@ -141,7 +144,7 @@ export default function OwnerDashboard() {
                     {media.map((item) => (
                       <article key={item.id} className="owner-media-card">
                         <div className="owner-media-preview">{item.url ? (item.mediaType === 'IMAGE' ? <img src={item.thumbnailUrl || item.url} alt="" /> : <video src={item.renditionUrl || item.url} poster={item.thumbnailUrl ?? undefined} controls />) : <span>{item.status}</span>}</div>
-                        <div className="owner-media-info"><strong>{item.guestName || 'Guest'}</strong><small>{item.status} · {item.visibility}</small><div><button onClick={() => changeVisibility(item)}>{item.visibility === 'PUBLIC' ? 'Make private' : 'Make public'}</button>{item.url && <a href={item.url} download>Download</a>}<button onClick={() => removeMedia(item.id)}>{d.common.delete}</button></div></div>
+                        <div className="owner-media-info"><strong>{item.guestName || 'Guest'}</strong><small>{item.status} · {item.visibility}</small><div><button onClick={() => changeVisibility(item)}>{item.visibility === 'PUBLIC' ? 'Make private' : 'Make public'}</button>{item.url && <a href={item.url} download>Download</a>}<button onClick={() => setConfirmDeleteId(item.id)}>{d.common.delete}</button></div></div>
                       </article>
                     ))}
                   </div>
@@ -166,7 +169,19 @@ export default function OwnerDashboard() {
           }}
         />
       )}
-      {sharing && selected && <ShareDialog event={selected} onClose={() => setSharing(false)} />}
+      {sharing && selected && <ShareDialog event={selected} locale={locale} dictionary={d} onClose={() => setSharing(false)} />}
+      {confirmDeleteId && (
+        <div className="confirm-dialog" onMouseDown={(e) => e.currentTarget === e.target && setConfirmDeleteId(null)}>
+          <div className="confirm-card">
+            <strong>{d.dashboard.deleteMediaTitle}</strong>
+            <p>{d.dashboard.deleteMediaBody}</p>
+            <div className="confirm-card__actions">
+              <button className="button button--outline" onClick={() => setConfirmDeleteId(null)}>{d.common.cancel}</button>
+              <button className="button button--danger" onClick={confirmDelete}>{d.common.delete}</button>
+            </div>
+          </div>
+        </div>
+      )}
     </DashboardShell>
   );
 }
