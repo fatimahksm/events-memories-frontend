@@ -4,6 +4,7 @@ import { ChangeEvent, CSSProperties, FormEvent, useEffect, useMemo, useState } f
 import QRCode from 'qrcode';
 import { apiFetch, errorMessage } from '@/lib/api-client';
 import { EventPreview } from '@/components/admin/EventWizard';
+import { FONT_OPTIONS } from '@/lib/fonts';
 import type { EventSummary } from '@/types/event';
 import type { Dictionary } from '@/i18n/dictionary';
 
@@ -78,7 +79,7 @@ export function ThemeEditor({ event, dictionary, scope = 'admin', onSaved, onClo
               <label className="field"><span>{dictionary.admin.accent}</span><input type="color" value={theme.accentColor} onChange={(change) => setTheme({ ...theme, accentColor: change.target.value })} /></label>
               <label className="field"><span>{dictionary.admin.text}</span><input type="color" value={theme.textColor} onChange={(change) => setTheme({ ...theme, textColor: change.target.value })} /></label>
             </div>
-            <label className="field"><span>{dictionary.admin.font}</span><select value={theme.fontFamily} onChange={(change) => setTheme({ ...theme, fontFamily: change.target.value })}><option value="Georgia, serif">Georgia</option><option value="Inter, sans-serif">Inter</option><option value="'Times New Roman', serif">Classic Serif</option></select></label>
+            <label className="field"><span>{dictionary.admin.font}</span><select value={theme.fontFamily} onChange={(change) => setTheme({ ...theme, fontFamily: change.target.value })}>{FONT_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></label>
             <label className="field"><span>{dictionary.admin.overlay}: {theme.overlayOpacity.toFixed(2)}</span><input type="range" min="0" max="0.85" step="0.05" value={theme.overlayOpacity} onChange={(change) => setTheme({ ...theme, overlayOpacity: Number(change.target.value) })} /></label>
             <label className="field"><span>{dictionary.admin.radius}: {theme.buttonRadiusPx}px</span><input type="range" min="0" max="999" step="4" value={theme.buttonRadiusPx} onChange={(change) => setTheme({ ...theme, buttonRadiusPx: Number(change.target.value) })} /></label>
             <div className="segmented-field"><span>Page mode</span><div className="segmented"><button type="button" className={theme.colorMode === 'DARK' ? 'active' : ''} onClick={() => setTheme({ ...theme, colorMode: 'DARK' })}>Dark</button><button type="button" className={theme.colorMode === 'LIGHT' ? 'active' : ''} onClick={() => setTheme({ ...theme, colorMode: 'LIGHT' })}>Light</button></div></div>
@@ -99,14 +100,15 @@ export function ThemeEditor({ event, dictionary, scope = 'admin', onSaved, onClo
 }
 
 function EventShareTools({ event, scope }: { event: EventSummary; scope: 'admin' | 'owner' }) {
-  const [links, setLinks] = useState({ publicUrl: '', adminUrl: '', qr: '' });
+  const [links, setLinks] = useState({ publicUrl: '', adminUrl: '', ownerLoginUrl: '', qr: '' });
   const [copied, setCopied] = useState('');
   useEffect(() => {
     const locale = window.location.pathname.split('/')[1] || 'en';
     const publicUrl = `${window.location.origin}/${locale}/e/${event.slug}`;
     const adminUrl = `${window.location.origin}/${locale}/admin?event=${event.id}`;
-    QRCode.toDataURL(publicUrl, { width: 260, margin: 1, color: { dark: '#07142F', light: '#FFFFFF' }, errorCorrectionLevel: 'H' }).then((qr) => setLinks({ publicUrl, adminUrl, qr }));
+    const ownerLoginUrl = `${window.location.origin}/${locale}/login`;
+    QRCode.toDataURL(publicUrl, { width: 260, margin: 1, color: { dark: '#07142F', light: '#FFFFFF' }, errorCorrectionLevel: 'H' }).then((qr) => setLinks({ publicUrl, adminUrl, ownerLoginUrl, qr }));
   }, [event.id, event.slug]);
   async function copy(label: string, value: string) { await navigator.clipboard.writeText(value); setCopied(label); setTimeout(() => setCopied(''), 1500); }
-  return <section className="admin-form event-share-tools"><div><span className="eyebrow">EVENT ACCESS</span><h2>Links and QR code</h2>{scope === 'admin' && <p>Super Admin access remains available here at any time.</p>}</div><div className="event-share-tools__body">{links.qr && <div className="qr-card"><img src={links.qr} alt="Event QR code" /><a className="button button--outline" href={links.qr} download={`${event.slug}-qr.png`}>Download QR</a></div>}<div className="link-stack"><div className="copy-link"><span>Public guest link</span><div><code>{links.publicUrl}</code><button onClick={() => copy('public', links.publicUrl)}>{copied === 'public' ? 'Copied' : 'Copy'}</button></div></div>{scope === 'admin' && <div className="copy-link"><span>Admin management link</span><div><code>{links.adminUrl}</code><button onClick={() => copy('admin', links.adminUrl)}>{copied === 'admin' ? 'Copied' : 'Copy'}</button></div></div>}<a className="button button--primary" href={links.publicUrl} target="_blank">Open public event</a></div></div></section>;
+  return <section className="admin-form event-share-tools"><div><span className="eyebrow">EVENT ACCESS</span><h2>Links and QR code</h2>{scope === 'admin' && <p>Super Admin access remains available here at any time.</p>}</div><div className="event-share-tools__body">{links.qr && <div className="qr-card"><img src={links.qr} alt="Event QR code" /><a className="button button--outline" href={links.qr} download={`${event.slug}-qr.png`}>Download QR</a></div>}<div className="link-stack"><div className="copy-link"><span>Public guest link</span><div><code>{links.publicUrl}</code><button onClick={() => copy('public', links.publicUrl)}>{copied === 'public' ? 'Copied' : 'Copy'}</button></div></div>{scope === 'admin' && <div className="copy-link"><span>Owner login (email + password)</span><div><code>{links.ownerLoginUrl}</code><button onClick={() => copy('ownerLogin', links.ownerLoginUrl)}>{copied === 'ownerLogin' ? 'Copied' : 'Copy'}</button></div></div>}{scope === 'admin' && <div className="copy-link"><span>Admin management link</span><div><code>{links.adminUrl}</code><button onClick={() => copy('admin', links.adminUrl)}>{copied === 'admin' ? 'Copied' : 'Copy'}</button></div></div>}<a className="button button--primary" href={links.publicUrl} target="_blank">Open public event</a></div></div></section>;
 }
