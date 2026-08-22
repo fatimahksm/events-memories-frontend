@@ -5,7 +5,11 @@ const asNumber = (value: string | undefined, fallback: number) => {
 };
 
 export const appConfig = {
-  apiBaseUrl: required(process.env.NEXT_PUBLIC_API_BASE_URL, 'http://localhost:8080/api'),
+  // Relative by default so requests go through the same-origin proxy in next.config.ts
+  // (rewrites /api/* to the real backend) — keeps auth cookies first-party instead of
+  // cross-site, which Safari blocks outright. Only override this for a setup that isn't
+  // proxied through this Next.js app at all.
+  apiBaseUrl: required(process.env.NEXT_PUBLIC_API_BASE_URL, '/api'),
   defaultLocale: required(process.env.NEXT_PUBLIC_DEFAULT_LOCALE, 'en'),
   requestTimeoutMs: asNumber(process.env.NEXT_PUBLIC_REQUEST_TIMEOUT_MS, 20000),
   uploadTimeoutMs: asNumber(process.env.NEXT_PUBLIC_UPLOAD_TIMEOUT_MS, 120000),
