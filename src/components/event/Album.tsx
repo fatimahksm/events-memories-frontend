@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { apiFetch, errorMessage } from '@/lib/api-client';
 import { MediaGrid } from './MediaGrid';
+import { AlbumSkeleton } from './AlbumSkeleton';
 import type { Dictionary } from '@/i18n/dictionary';
 import type { MediaItem, MediaPage } from '@/types/media';
 
@@ -57,7 +58,7 @@ export function Album({ slug, locale, dictionary, refreshKey }: { slug: string; 
   return <section id="album" className="album-section">
     <div className="section-heading"><span>ALBUM</span><h2>{dictionary.album.title}</h2><p>{dictionary.album.subtitle}</p></div>
     {error && <div className="notice notice--error"><strong>Unable to load</strong><span>{error}</span><button onClick={load}>{dictionary.common.retry}</button></div>}
-    {loading ? <div className="loader">{dictionary.common.loading}</div> : items.length === 0 ? <div className="empty-card"><p>{dictionary.album.empty}</p></div> : <MediaGrid items={items} dictionary={dictionary} liked={liked} onLike={like} />}
+    {loading ? <AlbumSkeleton /> : items.length === 0 ? <div className="empty-card"><p>{dictionary.album.empty}</p></div> : <MediaGrid items={items} dictionary={dictionary} liked={liked} onLike={like} />}
     {!loading && items.length > 0 && <Link className="button button--outline load-more" href={`/${locale}/e/${slug}/album`}>{dictionary.album.viewAll}{totalElements > items.length ? ` (${totalElements})` : ''}</Link>}
   </section>;
 }

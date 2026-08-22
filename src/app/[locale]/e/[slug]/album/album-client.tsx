@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { apiFetch, errorMessage } from '@/lib/api-client';
 import { MediaGrid } from '@/components/event/MediaGrid';
+import { AlbumSkeleton } from '@/components/event/AlbumSkeleton';
 import type { Dictionary, Locale } from '@/i18n/dictionary';
 import type { PublicEvent } from '@/types/event';
 import type { MediaItem, MediaPage } from '@/types/media';
@@ -67,7 +68,7 @@ export function AlbumPageClient({ event, dictionary, locale }: { event: PublicEv
     </div>
     <section className="album-section album-section--full">
       {error && <div className="notice notice--error"><strong>Unable to load</strong><span>{error}</span><button onClick={() => load(page)}>{dictionary.common.retry}</button></div>}
-      {loading ? <div className="loader">{dictionary.common.loading}</div> : items.length === 0 ? <div className="empty-card"><p>{dictionary.album.empty}</p></div> : <MediaGrid items={items} dictionary={dictionary} liked={liked} onLike={like} />}
+      {loading ? <AlbumSkeleton /> : items.length === 0 ? <div className="empty-card"><p>{dictionary.album.empty}</p></div> : <MediaGrid items={items} dictionary={dictionary} liked={liked} onLike={like} />}
       {!loading && totalPages > 1 && <nav className="pagination">
         <button className="button button--outline" disabled={page <= 0} onClick={() => load(page - 1)}>{dictionary.album.previous}</button>
         <span>{page + 1} / {totalPages}</span>

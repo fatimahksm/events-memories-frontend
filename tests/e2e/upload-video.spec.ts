@@ -19,8 +19,8 @@ test('an HEVC video from an iPhone uploads and appears with a poster and playabl
   await page.setInputFiles('.upload-sheet input[type=file]', path.join(__dirname, 'fixtures/sample-hevc.mp4'));
   await page.click('.upload-sheet button:has-text("Upload memories")');
 
-  await expect(page.locator('.upload-sheet .upload-success')).toBeVisible({ timeout: 20000 });
-  await page.click('.upload-sheet .upload-success button');
+  // Panel auto-closes on success — no dialog to dismiss.
+  await expect(page.locator('.upload-sheet')).toBeHidden({ timeout: 20000 });
 
   await page.goto(`/en/e/${event.slug}`, { waitUntil: 'networkidle' });
   await page.waitForFunction(() => document.querySelectorAll('.masonry video').length > 0, { timeout: 20000 });

@@ -19,5 +19,7 @@ test('a guest upload that fails backend validation is shown as an error, not a f
   await page.click('.upload-sheet button:has-text("Upload memories")');
 
   await expect(page.locator('.upload-row small.danger')).toBeVisible({ timeout: 15000 });
-  await expect(page.locator('.upload-sheet .upload-success')).toHaveCount(0);
+  // A failed file must keep the panel open showing the error — no auto-close, no thank-you toast.
+  await expect(page.locator('.upload-sheet')).toBeVisible();
+  await expect(page.locator('.memory-toast')).toHaveCount(0);
 });
