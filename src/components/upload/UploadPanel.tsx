@@ -87,6 +87,9 @@ function convertHeicToJpeg(file:File):Promise<File|null>{
        canvas.width=img.naturalWidth;canvas.height=img.naturalHeight;
        const ctx=canvas.getContext('2d');
        if(!ctx||canvas.width===0||canvas.height===0){cleanup();resolve(null);return;}
+       // JPEG has no alpha channel; without an explicit background a canvas with any transparency
+       // (rare for photos, but possible) would composite onto black/undefined instead of white.
+       ctx.fillStyle='#FFFFFF';ctx.fillRect(0,0,canvas.width,canvas.height);
        ctx.drawImage(img,0,0);
        canvas.toBlob(blob=>{cleanup();if(!blob){resolve(null);return;}const newName=file.name.replace(/\.[^.]+$/,'')+'.jpg';resolve(new File([blob],newName,{type:'image/jpeg'}));},'image/jpeg',0.9);
      }catch{cleanup();resolve(null);}
