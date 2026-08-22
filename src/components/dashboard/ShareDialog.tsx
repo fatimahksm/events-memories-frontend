@@ -4,16 +4,18 @@ import { useEffect, useState } from 'react';
 import type { CSSProperties } from 'react';
 import QRCode from 'qrcode';
 import type { EventSummary } from '@/types/event';
+import type { Dictionary } from '@/i18n/dictionary';
 
-export function ShareDialog({ event, onClose }: { event: EventSummary; onClose: () => void }) {
+export function ShareDialog({ event, locale, dictionary, onClose }: { event: EventSummary; locale: string; dictionary: Dictionary; onClose: () => void }) {
   const [links, setLinks] = useState({ publicUrl: '', qr: '' });
   const [copied, setCopied] = useState('');
+  const arabic = locale === 'ar';
+  const eventName = arabic ? event.namesAr || event.names : event.names;
 
   useEffect(() => {
-    const locale = window.location.pathname.split('/')[1] || 'en';
     const publicUrl = `${window.location.origin}/${locale}/e/${event.slug}`;
     QRCode.toDataURL(publicUrl, { width: 420, margin: 1, color: { dark: '#07142F', light: '#FFFFFF' }, errorCorrectionLevel: 'H' }).then((qr) => setLinks({ publicUrl, qr }));
-  }, [event.id, event.slug]);
+  }, [event.id, event.slug, locale]);
 
   async function copy() {
     await navigator.clipboard.writeText(links.publicUrl);
@@ -41,11 +43,18 @@ export function ShareDialog({ event, onClose }: { event: EventSummary; onClose: 
           </div>
         </div>
       </div>
-      <div className="print-card" style={{ '--print-accent': event.theme.accentColor } as CSSProperties}>
-        <span className="print-card__kicker">Scan to share your memories</span>
-        <strong>{event.names}</strong>
+      <div className="print-card" style={{ '--print-accent': event.theme.accentColor, fontFamily: event.theme.fontFamily } as CSSProperties} dir={arabic ? 'rtl' : 'ltr'}>
+        <span className="print-card__kicker">{dictionary.dashboard.title}</span>
+        <strong className="print-card__welcome">{dictionary.dashboard.printWelcome}</strong>
+        <span className="print-card__names">{eventName}</span>
+        {event.eventDate && (
+          <time className="print-card__date">
+            {new Intl.DateTimeFormat(arabic ? 'ar-LB' : 'en-GB', { day: 'numeric', month: 'long', year: 'numeric' }).format(new Date(event.eventDate + 'T00:00:00'))}
+          </time>
+        )}
         {links.qr && <img src={links.qr} alt="" />}
-        <small>Brava Event Memories</small>
+        <p className="print-card__cta">{dictionary.dashboard.printCta}</p>
+        <small className="print-card__brand">Brava Event Memories</small>
       </div>
     </div>
   );
