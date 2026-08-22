@@ -36,14 +36,14 @@ export default function ForgotPasswordPage() {
         <div className="auth-mobile-brand"><BrandLogo /></div>
         {sent ? (
           <div className="auth-card">
-            <span className="auth-eyebrow">SUPER ADMIN ACCESS</span>
+            <span className="auth-eyebrow">ACCOUNT ACCESS</span>
             <h1>{d.auth.forgotPasswordTitle}</h1>
             <div className="notice notice--success"><strong>Link sent</strong><span>{d.auth.forgotPasswordSent}</span></div>
             <a className="button button--primary button--wide" href={`/${locale}/login`}>{d.auth.backToLogin}</a>
           </div>
         ) : (
           <form className="auth-card" onSubmit={submit}>
-            <span className="auth-eyebrow">SUPER ADMIN ACCESS</span>
+            <span className="auth-eyebrow">ACCOUNT ACCESS</span>
             <h1>{d.auth.forgotPasswordTitle}</h1>
             <p>{d.auth.forgotPasswordSubtitle}</p>
             <label className="field"><span>{d.auth.email}</span><input type="email" autoComplete="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="name@company.com" /></label>

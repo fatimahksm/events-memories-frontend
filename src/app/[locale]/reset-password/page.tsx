@@ -42,25 +42,25 @@ function ResetPasswordForm() {
         <div className="auth-mobile-brand"><BrandLogo /></div>
         {!token ? (
           <div className="auth-card">
-            <span className="auth-eyebrow">SUPER ADMIN ACCESS</span>
-            <h1>{d.auth.ownerAccessInvalidTitle}</h1>
+            <span className="auth-eyebrow">ACCOUNT ACCESS</span>
+            <h1>{d.auth.resetLinkInvalidTitle}</h1>
             <p>{d.auth.resetPasswordInvalid}</p>
             <a className="button button--primary button--wide" href={`/${locale}/forgot-password`}>{d.auth.forgotPasswordTitle}</a>
           </div>
         ) : done ? (
           <div className="auth-card">
-            <span className="auth-eyebrow">SUPER ADMIN ACCESS</span>
+            <span className="auth-eyebrow">ACCOUNT ACCESS</span>
             <h1>{d.auth.resetPasswordTitle}</h1>
             <div className="notice notice--success"><strong>Password reset</strong><span>{d.auth.resetPasswordSuccess}</span></div>
             <a className="button button--primary button--wide" href={`/${locale}/login`}>{d.auth.goToLogin}</a>
           </div>
         ) : (
           <form className="auth-card" onSubmit={submit}>
-            <span className="auth-eyebrow">SUPER ADMIN ACCESS</span>
+            <span className="auth-eyebrow">ACCOUNT ACCESS</span>
             <h1>{d.auth.resetPasswordTitle}</h1>
             <p>{d.auth.resetPasswordSubtitle}</p>
             <label className="field"><span>{d.auth.newPassword}</span><input type="password" autoComplete="new-password" required minLength={10} value={newPassword} onChange={(e) => setNewPassword(e.target.value)} placeholder="Enter your new password" /></label>
-            {error && <div className="notice notice--error" role="alert"><strong>{d.auth.ownerAccessInvalidTitle}</strong><span>{error}</span></div>}
+            {error && <div className="notice notice--error" role="alert"><strong>{d.auth.resetLinkInvalidTitle}</strong><span>{error}</span></div>}
             <button className="button button--primary button--wide" disabled={busy}>{busy ? d.common.loading : d.auth.resetPasswordButton}</button>
             <small className="auth-switch"><a href={`/${locale}/login`}>{d.auth.backToLogin}</a></small>
           </form>

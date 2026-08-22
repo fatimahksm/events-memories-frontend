@@ -11,7 +11,7 @@ import { DashboardShell } from '@/components/dashboard/DashboardShell';
 import { ThemeEditor } from '@/components/dashboard/ThemeEditor';
 import { ShareDialog } from '@/components/dashboard/ShareDialog';
 
-type Me = { role: string; scopedEventId: string | null };
+type Me = { role: string };
 type VisibilityFilter = 'ALL' | 'PUBLIC' | 'PRIVATE';
 
 export default function OwnerDashboard() {
@@ -35,7 +35,6 @@ export default function OwnerDashboard() {
   const [visibilityFilter, setVisibilityFilter] = useState<VisibilityFilter>('ALL');
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
-  const [scoped, setScoped] = useState(false);
 
   const loadEvents = useCallback(async () => {
     try {
@@ -44,7 +43,6 @@ export default function OwnerDashboard() {
         router.replace(`/${locale}/admin`);
         return;
       }
-      setScoped(Boolean(me.scopedEventId));
       const result = await apiFetch<EventSummary[]>('/owner/events');
       setEvents(result);
       setSelected((current) => result.find((event) => event.id === current?.id) ?? result[0] ?? null);
@@ -133,26 +131,23 @@ export default function OwnerDashboard() {
 
   return (
     <DashboardShell title={d.dashboard.title} locale={locale} logoutLabel={d.common.logout}>
-      {scoped && <div className="notice notice--success"><strong>Event-only access</strong><span>This link opens just this one event.</span></div>}
-      {!scoped && (
-        <form className="admin-form owner-event-form" onSubmit={createEvent}>
-          <div className="section-heading"><div><span className="eyebrow">Workspace</span><h2>{d.dashboard.newEvent}</h2></div><p>Create another guest experience from your workspace.</p></div>
-          <label className="field"><span>{d.dashboard.eventNames}</span><input name="names" required maxLength={180} /></label>
-          <label className="field"><span>{d.dashboard.quote}</span><textarea name="quote" rows={2} maxLength={500} /></label>
-          <div className="form-grid">
-            <label className="field"><span>{d.dashboard.eventDate}</span><input name="date" type="date" /></label>
-            <label className="field"><span>{d.dashboard.expires}</span><input name="expires" type="datetime-local" required /></label>
-            <label className="field"><span>{d.dashboard.deleteAt}</span><input name="deleteAt" type="datetime-local" /></label>
-            <label className="field"><span>{d.dashboard.slug}</span><input name="slug" maxLength={140} /></label>
-          </div>
-          <button className="button button--dark" disabled={busy}>{busy ? d.common.loading : d.dashboard.create}</button>
-        </form>
-      )}
+      <form className="admin-form owner-event-form" onSubmit={createEvent}>
+        <div className="section-heading"><div><span className="eyebrow">Workspace</span><h2>{d.dashboard.newEvent}</h2></div><p>Create another guest experience from your workspace.</p></div>
+        <label className="field"><span>{d.dashboard.eventNames}</span><input name="names" required maxLength={180} /></label>
+        <label className="field"><span>{d.dashboard.quote}</span><textarea name="quote" rows={2} maxLength={500} /></label>
+        <div className="form-grid">
+          <label className="field"><span>{d.dashboard.eventDate}</span><input name="date" type="date" /></label>
+          <label className="field"><span>{d.dashboard.expires}</span><input name="expires" type="datetime-local" required /></label>
+          <label className="field"><span>{d.dashboard.deleteAt}</span><input name="deleteAt" type="datetime-local" /></label>
+          <label className="field"><span>{d.dashboard.slug}</span><input name="slug" maxLength={140} /></label>
+        </div>
+        <button className="button button--dark" disabled={busy}>{busy ? d.common.loading : d.dashboard.create}</button>
+      </form>
 
       {error && <p className="form-error api-alert" role="alert">{error}</p>}
       {loading ? <p>{d.common.loading}</p> : events.length === 0 ? <div className="empty-card">{d.dashboard.noEvents}</div> : (
         <>
-          {!scoped && <div className="event-tabs">{events.map((event) => <button className={selected?.id === event.id ? 'active' : ''} key={event.id} onClick={() => setSelected(event)}>{event.names}</button>)}</div>}
+          <div className="event-tabs">{events.map((event) => <button className={selected?.id === event.id ? 'active' : ''} key={event.id} onClick={() => setSelected(event)}>{event.names}</button>)}</div>
           {selected && (
             <>
               <section className="event-summary-card">
