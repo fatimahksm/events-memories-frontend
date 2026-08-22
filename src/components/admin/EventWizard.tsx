@@ -83,7 +83,7 @@ export function EventWizard({ owners, locale, onCreated }: { owners: Owner[]; lo
       const origin = window.location.origin;
       const publicUrl = `${origin}/${locale}/e/${created.slug}`;
       const adminUrl = `${origin}/${locale}/admin?event=${created.id}`;
-      const ownerLoginUrl = `${origin}/${locale}/login`;
+      const ownerLoginUrl = `${origin}/${locale}/login?event=${created.slug}`;
       const qr = await QRCode.toDataURL(publicUrl, { width: 320, margin: 1, color: { dark: '#07142F', light: '#FFFFFF' }, errorCorrectionLevel: 'H' });
       setResult({ event: created, publicUrl, adminUrl, ownerLoginUrl, qr });
       onCreated(created);
