@@ -14,7 +14,10 @@ export async function apiFetch<T>(path:string,init?:RequestInit):Promise<T>{
  finally{clearTimeout(timer);}
  if(!response.ok){const body=await response.json().catch(()=>null);throw new ApiError(body?.code??'UNKNOWN_ERROR',body?.message??`Request failed (${response.status})`,response.status);}
  if(response.status===204)return undefined as T;
- return response.json() as Promise<T>;
+ // Some endpoints (e.g. a bare void DELETE) return 200 with an empty body rather than 204 —
+ // parsing that as JSON throws even though the request genuinely succeeded, so check first.
+ const text=await response.text();
+ return (text?JSON.parse(text):undefined) as T;
 }
 export async function publicFetch<T>(path:string):Promise<T>{return apiFetch<T>(path,{cache:'no-store'});}
 export function errorMessage(error:unknown,fallback:string){return error instanceof ApiError?error.message:fallback;}
