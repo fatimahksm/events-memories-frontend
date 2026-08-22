@@ -106,7 +106,7 @@ function EventShareTools({ event, scope }: { event: EventSummary; scope: 'admin'
     const locale = window.location.pathname.split('/')[1] || 'en';
     const publicUrl = `${window.location.origin}/${locale}/e/${event.slug}`;
     const adminUrl = `${window.location.origin}/${locale}/admin?event=${event.id}`;
-    const ownerLoginUrl = `${window.location.origin}/${locale}/login`;
+    const ownerLoginUrl = `${window.location.origin}/${locale}/login?event=${event.slug}`;
     QRCode.toDataURL(publicUrl, { width: 260, margin: 1, color: { dark: '#07142F', light: '#FFFFFF' }, errorCorrectionLevel: 'H' }).then((qr) => setLinks({ publicUrl, adminUrl, ownerLoginUrl, qr }));
   }, [event.id, event.slug]);
   async function copy(label: string, value: string) { await navigator.clipboard.writeText(value); setCopied(label); setTimeout(() => setCopied(''), 1500); }
