@@ -100,14 +100,15 @@ export function ThemeEditor({ event, dictionary, scope = 'admin', onSaved, onClo
 }
 
 function EventShareTools({ event, scope }: { event: EventSummary; scope: 'admin' | 'owner' }) {
-  const [links, setLinks] = useState({ publicUrl: '', adminUrl: '', qr: '' });
+  const [links, setLinks] = useState({ publicUrl: '', adminUrl: '', ownerLoginUrl: '', qr: '' });
   const [copied, setCopied] = useState('');
   useEffect(() => {
     const locale = window.location.pathname.split('/')[1] || 'en';
     const publicUrl = `${window.location.origin}/${locale}/e/${event.slug}`;
     const adminUrl = `${window.location.origin}/${locale}/admin?event=${event.id}`;
-    QRCode.toDataURL(publicUrl, { width: 260, margin: 1, color: { dark: '#07142F', light: '#FFFFFF' }, errorCorrectionLevel: 'H' }).then((qr) => setLinks({ publicUrl, adminUrl, qr }));
+    const ownerLoginUrl = `${window.location.origin}/${locale}/login`;
+    QRCode.toDataURL(publicUrl, { width: 260, margin: 1, color: { dark: '#07142F', light: '#FFFFFF' }, errorCorrectionLevel: 'H' }).then((qr) => setLinks({ publicUrl, adminUrl, ownerLoginUrl, qr }));
   }, [event.id, event.slug]);
   async function copy(label: string, value: string) { await navigator.clipboard.writeText(value); setCopied(label); setTimeout(() => setCopied(''), 1500); }
-  return <section className="admin-form event-share-tools"><div><span className="eyebrow">EVENT ACCESS</span><h2>Links and QR code</h2>{scope === 'admin' && <p>Super Admin access remains available here at any time.</p>}</div><div className="event-share-tools__body">{links.qr && <div className="qr-card"><img src={links.qr} alt="Event QR code" /><a className="button button--outline" href={links.qr} download={`${event.slug}-qr.png`}>Download QR</a></div>}<div className="link-stack"><div className="copy-link"><span>Public guest link</span><div><code>{links.publicUrl}</code><button onClick={() => copy('public', links.publicUrl)}>{copied === 'public' ? 'Copied' : 'Copy'}</button></div></div>{scope === 'admin' && <div className="copy-link"><span>Admin management link</span><div><code>{links.adminUrl}</code><button onClick={() => copy('admin', links.adminUrl)}>{copied === 'admin' ? 'Copied' : 'Copy'}</button></div></div>}<a className="button button--primary" href={links.publicUrl} target="_blank">Open public event</a></div></div></section>;
+  return <section className="admin-form event-share-tools"><div><span className="eyebrow">EVENT ACCESS</span><h2>Links and QR code</h2>{scope === 'admin' && <p>Super Admin access remains available here at any time.</p>}</div><div className="event-share-tools__body">{links.qr && <div className="qr-card"><img src={links.qr} alt="Event QR code" /><a className="button button--outline" href={links.qr} download={`${event.slug}-qr.png`}>Download QR</a></div>}<div className="link-stack"><div className="copy-link"><span>Public guest link</span><div><code>{links.publicUrl}</code><button onClick={() => copy('public', links.publicUrl)}>{copied === 'public' ? 'Copied' : 'Copy'}</button></div></div>{scope === 'admin' && <div className="copy-link"><span>Owner login (email + password)</span><div><code>{links.ownerLoginUrl}</code><button onClick={() => copy('ownerLogin', links.ownerLoginUrl)}>{copied === 'ownerLogin' ? 'Copied' : 'Copy'}</button></div></div>}{scope === 'admin' && <div className="copy-link"><span>Admin management link</span><div><code>{links.adminUrl}</code><button onClick={() => copy('admin', links.adminUrl)}>{copied === 'admin' ? 'Copied' : 'Copy'}</button></div></div>}<a className="button button--primary" href={links.publicUrl} target="_blank">Open public event</a></div></div></section>;
 }
