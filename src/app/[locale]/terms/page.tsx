@@ -38,7 +38,7 @@ export default async function TermsPage({ params }: { params: Promise<{ locale: 
         <p>We may update these terms from time to time as the product evolves. The effective date above will change when we do, and continued use of the product after an update means you accept the revised terms.</p>
 
         <h2>Contact</h2>
-        <p>Questions about these terms can be sent to [add your Brava Technology support email here].</p>
+        <p>Questions about these terms can be sent to <a href="mailto:bravaatech@gmail.com">bravaatech@gmail.com</a>.</p>
 
         <p className="legal-page__note">This page explains, in plain language, how Brava Event Memories works. It is not a substitute for legal advice.</p>
       </article>

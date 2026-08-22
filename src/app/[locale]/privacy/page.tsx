@@ -46,7 +46,7 @@ export default async function PrivacyPage({ params }: { params: Promise<{ locale
         <p>If you'd like to know what data we hold about you, or ask us to remove it sooner than the automatic schedule above, reach out using the contact details below and we'll handle it directly.</p>
 
         <h2>Contact</h2>
-        <p>Questions about this policy, or requests about your data, can be sent to [add your Brava Technology support email here].</p>
+        <p>Questions about this policy, or requests about your data, can be sent to <a href="mailto:bravaatech@gmail.com">bravaatech@gmail.com</a>.</p>
 
         <p className="legal-page__note">This page explains, in plain language, how Brava Event Memories works. It is not a substitute for legal advice.</p>
       </article>
