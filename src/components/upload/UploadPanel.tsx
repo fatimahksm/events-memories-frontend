@@ -11,9 +11,21 @@ function getVisitorId(){let id=localStorage.getItem('eventVisitorId');if(!id){id
 export function UploadPanel({dictionary,eventSlug,onClose,onUploaded}:{dictionary:Dictionary;eventSlug:string;onClose:()=>void;onUploaded:()=>void}){
  const inputRef=useRef<HTMLInputElement>(null); const [guestName,setGuestName]=useState(''); const [visibility,setVisibility]=useState<MediaVisibility>('PUBLIC'); const [files,setFiles]=useState<SelectedUploadFile[]>([]); const [formError,setFormError]=useState<string>(); const [completed,setCompleted]=useState(false); const running=useRef(new Map<string,XMLHttpRequest>());
  const canUpload=useMemo(()=>files.some(f=>f.state==='idle'||f.state==='error'),[files]);
- function add(selected:File[]){setFormError(undefined);if(files.length+selected.length>appConfig.uploads.maxFilesPerUpload){setFormError(dictionary.upload.tooMany);return;}const mapped=selected.map<SelectedUploadFile>(file=>{const ve=validateUploadFile(file);return{id:makeId(),file,previewUrl:file.type.startsWith('image/')?URL.createObjectURL(file):undefined,progress:0,state:ve?'error':'idle',error:ve?dictionary.upload[ve]:undefined};});setFiles(c=>[...c,...mapped]);}
- function onSelect(e:ChangeEvent<HTMLInputElement>){add(Array.from(e.target.files??[]));e.target.value='';}
- function onDrop(e:DragEvent){e.preventDefault();add(Array.from(e.dataTransfer.files??[]));}
+ async function add(selected:File[]){setFormError(undefined);if(files.length+selected.length>appConfig.uploads.maxFilesPerUpload){setFormError(dictionary.upload.tooMany);return;}
+   const mapped:SelectedUploadFile[]=[];
+   for(const original of selected){
+     let file=original;let heicError:string|undefined;
+     if(isHeicLike(original)){
+       const converted=await convertHeicToJpeg(original);
+       if(converted)file=converted;else heicError=dictionary.upload.heicUnsupported;
+     }
+     const ve=heicError?undefined:validateUploadFile(file);
+     mapped.push({id:makeId(),file,previewUrl:file.type.startsWith('image/')?URL.createObjectURL(file):undefined,progress:0,state:(heicError||ve)?'error':'idle',error:heicError??(ve?dictionary.upload[ve]:undefined)});
+   }
+   setFiles(c=>[...c,...mapped]);
+ }
+ function onSelect(e:ChangeEvent<HTMLInputElement>){void add(Array.from(e.target.files??[]));e.target.value='';}
+ function onDrop(e:DragEvent){e.preventDefault();void add(Array.from(e.dataTransfer.files??[]));}
  function patch(id:string,data:Partial<SelectedUploadFile>){setFiles(c=>c.map(f=>f.id===id?{...f,...data}:f));}
  async function uploadOne(item:SelectedUploadFile){patch(item.id,{state:'requesting',error:undefined});try{
    const s=await retry(()=>apiFetch<{uploadUrl:string;mediaId:string}>(`/public/events/${eventSlug}/uploads/session`,{method:'POST',headers:{'X-Visitor-Id':getVisitorId()},body:JSON.stringify({clientUploadId:item.id,fileName:item.file.name,contentType:item.file.type,size:item.file.size,visibility,guestName:guestName.trim()||null})}),appConfig.uploads.maxRetries,isRetryable);
@@ -43,7 +55,7 @@ export function UploadPanel({dictionary,eventSlug,onClose,onUploaded}:{dictionar
    <button className="close-button" onClick={onClose} aria-label="Close">×</button>
    {completed&&files.length>0&&files.every(f=>f.state==='success')?<div className="upload-success"><div className="success-mark"/><h2>{dictionary.upload.successTitle}</h2><p>{dictionary.upload.successText}</p><button className="button button--dark" onClick={onClose}>{dictionary.common.open}</button></div>:<>
    <div className="sheet-heading"><span className="kicker">MEMORIES</span><h2>{dictionary.upload.title}</h2><p>{dictionary.upload.subtitle}</p></div>
-   <input ref={inputRef} hidden type="file" multiple accept="image/jpeg,image/png,image/webp,video/mp4,video/quicktime" onChange={onSelect}/>
+   <input ref={inputRef} hidden type="file" multiple accept="image/jpeg,image/png,image/webp,image/heic,image/heif,video/mp4,video/quicktime" onChange={onSelect}/>
    <button className="drop-zone" onClick={()=>inputRef.current?.click()} onDragOver={e=>e.preventDefault()} onDrop={onDrop}><span className="drop-icon"/><strong>{dictionary.upload.choose}</strong><small>{dictionary.upload.drop}</small><em>JPG · PNG · WEBP · MP4 · MOV</em></button>
    <label className="field"><span>{dictionary.event.guestName}</span><input value={guestName} maxLength={100} onChange={e=>setGuestName(e.target.value)}/></label>
    <div className="visibility-grid">{(['PUBLIC','PRIVATE'] as const).map(v=><button key={v} type="button" className={`visibility-card ${visibility===v?'is-active':''}`} onClick={()=>setVisibility(v)}><span className="visibility-icon"/><span><strong>{v==='PUBLIC'?dictionary.event.public:dictionary.event.private}</strong><small>{v==='PUBLIC'?dictionary.event.publicHint:dictionary.event.privateHint}</small></span></button>)}</div>
@@ -59,3 +71,27 @@ function isRetryable(e:unknown){if(e instanceof ApiError)return e.status===0||e.
 class UploadHttpError extends Error{constructor(public readonly status:number,message:string){super(message);}}
 function uploadWithProgress(url:string,file:File,onProgress:(p:number)=>void,onStart:(xhr:XMLHttpRequest)=>void){return new Promise<void>((resolve,reject)=>{const xhr=new XMLHttpRequest();onStart(xhr);xhr.open('PUT',url);xhr.timeout=appConfig.uploadTimeoutMs;xhr.setRequestHeader('Content-Type',file.type);xhr.upload.onprogress=e=>{if(e.lengthComputable)onProgress(Math.round(e.loaded/e.total*100));};xhr.onload=()=>xhr.status>=200&&xhr.status<300?resolve():reject(new UploadHttpError(xhr.status,`Upload failed: ${xhr.status}`));xhr.onerror=()=>reject(new UploadHttpError(0,'Network error'));xhr.onabort=()=>reject(new UploadHttpError(0,'Upload cancelled'));xhr.ontimeout=()=>reject(new UploadHttpError(0,'Upload timed out'));xhr.send(file);});}
 function formatBytes(b:number){return b>=1024*1024?`${(b/1024/1024).toFixed(1)} MB`:`${Math.ceil(b/1024)} KB`;}
+function isHeicLike(file:File):boolean{const type=file.type.toLowerCase();const name=file.name.toLowerCase();return type==='image/heic'||type==='image/heif'||name.endsWith('.heic')||name.endsWith('.heif');}
+/** iPhone photos are HEIC by default. Only Safari/WebKit can decode HEIC in an <img>, so redraw it to
+ *  a canvas and re-export as JPEG right in the browser — no server-side conversion, no new dependency.
+ *  Returns null if this browser can't decode HEIC at all (non-Apple), so the caller can show a clear
+ *  message instead of silently failing later. */
+function convertHeicToJpeg(file:File):Promise<File|null>{
+ return new Promise(resolve=>{
+   const url=URL.createObjectURL(file);
+   const img=new Image();
+   const cleanup=()=>URL.revokeObjectURL(url);
+   img.onload=()=>{
+     try{
+       const canvas=document.createElement('canvas');
+       canvas.width=img.naturalWidth;canvas.height=img.naturalHeight;
+       const ctx=canvas.getContext('2d');
+       if(!ctx||canvas.width===0||canvas.height===0){cleanup();resolve(null);return;}
+       ctx.drawImage(img,0,0);
+       canvas.toBlob(blob=>{cleanup();if(!blob){resolve(null);return;}const newName=file.name.replace(/\.[^.]+$/,'')+'.jpg';resolve(new File([blob],newName,{type:'image/jpeg'}));},'image/jpeg',0.9);
+     }catch{cleanup();resolve(null);}
+   };
+   img.onerror=()=>{cleanup();resolve(null);};
+   img.src=url;
+ });
+}
