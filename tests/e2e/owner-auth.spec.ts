@@ -26,5 +26,7 @@ test('an owner signs in with email and password, landing on their own dashboard'
   await page.click('button:has-text("Sign in")');
   await page.waitForURL('**/dashboard', { timeout: 10000 });
 
-  await expect(page.locator('.owner-event-form')).toBeVisible();
+  // A fresh owner has no event yet (only Super Admin creates events) — the dashboard
+  // shows the "not set up yet" empty state rather than a self-service create form.
+  await expect(page.locator('.owner-empty-card')).toBeVisible();
 });

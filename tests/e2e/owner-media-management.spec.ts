@@ -54,7 +54,7 @@ test('an owner can see, download (all + individually), and delete guest uploads'
   await page.click('button:has-text("Sign in")');
   await page.waitForURL('**/dashboard', { timeout: 10000 });
 
-  await expect(page.locator('.event-tabs button', { hasText: event.names })).toBeVisible();
+  await expect(page.locator('.event-hero--owner h1')).toHaveText(event.names);
   await expect(page.locator('.owner-media-card')).toHaveCount(1, { timeout: 10000 });
 
   // Download-all resolves to a real zip archive, not an error page.

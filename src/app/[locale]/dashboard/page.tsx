@@ -1,10 +1,12 @@
 'use client';
 
-import { FormEvent, useCallback, useEffect, useState } from 'react';
+import type { CSSProperties } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { ApiError, apiFetch, errorMessage } from '@/lib/api-client';
 import { appConfig } from '@/config/app-config';
 import { getDictionary, isLocale } from '@/i18n/dictionary';
+import type { Dictionary } from '@/i18n/dictionary';
 import type { EventSummary } from '@/types/event';
 import type { MediaItem, MediaPage, Wish } from '@/types/media';
 import { DashboardShell } from '@/components/dashboard/DashboardShell';
@@ -28,7 +30,6 @@ export default function OwnerDashboard() {
   const [wishes, setWishes] = useState<Wish[]>([]);
   const [tab, setTab] = useState<'media' | 'wishes'>('media');
   const [loading, setLoading] = useState(true);
-  const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [editingDesign, setEditingDesign] = useState(false);
   const [sharing, setSharing] = useState(false);
@@ -77,34 +78,6 @@ export default function OwnerDashboard() {
     ]).catch((err) => setError(errorMessage(err, d.upload.genericError)));
   }, [d.upload.genericError, mediaPage, selected, visibilityFilter, dateFrom, dateTo]);
 
-  async function createEvent(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const form = event.currentTarget;
-    const data = new FormData(form);
-    setBusy(true);
-    setError('');
-    try {
-      const deleteValue = String(data.get('deleteAt') || '');
-      const created = await apiFetch<EventSummary>('/owner/events', {
-        method: 'POST',
-        body: JSON.stringify({
-          names: data.get('names'), quote: data.get('quote') || null,
-          eventDate: data.get('date') || null,
-          expiresAt: new Date(String(data.get('expires'))).toISOString(),
-          mediaDeleteAt: deleteValue ? new Date(deleteValue).toISOString() : null,
-          slug: data.get('slug') || null,
-        }),
-      });
-      form.reset();
-      setEvents((current) => [created, ...current]);
-      setSelected(created);
-    } catch (err) {
-      setError(errorMessage(err, d.upload.genericError));
-    } finally {
-      setBusy(false);
-    }
-  }
-
   async function changeVisibility(item: MediaItem) {
     if (!selected) return;
     setError('');
@@ -131,29 +104,26 @@ export default function OwnerDashboard() {
 
   return (
     <DashboardShell title={d.dashboard.title} locale={locale} logoutLabel={d.common.logout}>
-      <form className="admin-form owner-event-form" onSubmit={createEvent}>
-        <div className="section-heading"><div><span className="eyebrow">Workspace</span><h2>{d.dashboard.newEvent}</h2></div><p>Create another guest experience from your workspace.</p></div>
-        <label className="field"><span>{d.dashboard.eventNames}</span><input name="names" required maxLength={180} /></label>
-        <label className="field"><span>{d.dashboard.quote}</span><textarea name="quote" rows={2} maxLength={500} /></label>
-        <div className="form-grid">
-          <label className="field"><span>{d.dashboard.eventDate}</span><input name="date" type="date" /></label>
-          <label className="field"><span>{d.dashboard.expires}</span><input name="expires" type="datetime-local" required /></label>
-          <label className="field"><span>{d.dashboard.deleteAt}</span><input name="deleteAt" type="datetime-local" /></label>
-          <label className="field"><span>{d.dashboard.slug}</span><input name="slug" maxLength={140} /></label>
-        </div>
-        <button className="button button--dark" disabled={busy}>{busy ? d.common.loading : d.dashboard.create}</button>
-      </form>
-
       {error && <p className="form-error api-alert" role="alert">{error}</p>}
-      {loading ? <p>{d.common.loading}</p> : events.length === 0 ? <div className="empty-card">{d.dashboard.noEvents}</div> : (
+      {loading ? <p>{d.common.loading}</p> : events.length === 0 ? (
+        <div className="empty-card owner-empty-card"><strong>{d.dashboard.noEventsTitle}</strong><span>{d.dashboard.noEvents}</span></div>
+      ) : (
         <>
-          <div className="event-tabs">{events.map((event) => <button className={selected?.id === event.id ? 'active' : ''} key={event.id} onClick={() => setSelected(event)}>{event.names}</button>)}</div>
+          {events.length > 1 && (
+            <div className="event-switcher-minor">
+              <span>{d.dashboard.switchEvent}</span>
+              <div className="event-tabs event-tabs--minor">{events.map((event) => <button className={selected?.id === event.id ? 'active' : ''} key={event.id} onClick={() => setSelected(event)}>{event.names}</button>)}</div>
+            </div>
+          )}
           {selected && (
             <>
-              <section className="event-summary-card">
-                <div><span>{selected.active ? 'ACTIVE' : 'EXPIRED'}</span><h2>{selected.names}</h2><RetentionNotice mediaDeleteAt={selected.mediaDeleteAt} locale={locale} label={d.dashboard.deleteNotice} /></div>
-                <div className="summary-actions"><a className="button button--outline" target="_blank" href={`/${locale}/e/${selected.slug}`}>{d.dashboard.publicLink}</a><button className="button button--outline" onClick={() => setSharing(true)}>Share & print</button><button className="button button--outline" onClick={() => setEditingDesign(true)}>Edit design & content</button><a className="button button--dark" href={`${appConfig.apiBaseUrl}/owner/events/${selected.id}/download-all`}>{d.dashboard.downloadAll}</a></div>
-              </section>
+              <OwnerEventHero
+                event={selected}
+                locale={locale}
+                dictionary={d}
+                onShare={() => setSharing(true)}
+                onEditDesign={() => setEditingDesign(true)}
+              />
               <div className="dashboard-tabs"><button className={tab === 'media' ? 'active' : ''} onClick={() => setTab('media')}>{d.dashboard.media} ({mediaTotal})</button><button className={tab === 'wishes' ? 'active' : ''} onClick={() => setTab('wishes')}>{d.dashboard.wishes} ({wishes.length})</button></div>
               {tab === 'media' ? (
                 <>
@@ -198,6 +168,39 @@ export default function OwnerDashboard() {
       )}
       {sharing && selected && <ShareDialog event={selected} onClose={() => setSharing(false)} />}
     </DashboardShell>
+  );
+}
+
+function OwnerEventHero({ event, locale, dictionary, onShare, onEditDesign }: { event: EventSummary; locale: string; dictionary: Dictionary; onShare: () => void; onEditDesign: () => void }) {
+  const theme = event.theme;
+  const style = {
+    '--event-text': theme.textColor,
+    '--event-primary': theme.primaryColor,
+    '--event-accent': theme.accentColor,
+    '--event-radius': `${theme.buttonRadiusPx}px`,
+    '--event-font': theme.fontFamily,
+    '--event-overlay': String(theme.overlayOpacity),
+    backgroundColor: theme.primaryColor,
+    backgroundImage: theme.backgroundImageUrl
+      ? `linear-gradient(rgba(2,10,28,${theme.overlayOpacity}),rgba(2,10,28,${Math.min(theme.overlayOpacity + .1, .9)})),url("${theme.backgroundImageUrl}")`
+      : `linear-gradient(135deg,${theme.primaryColor},${theme.accentColor})`,
+    backgroundPosition: `${theme.backgroundPositionX}% ${theme.backgroundPositionY}%`,
+    backgroundSize: theme.backgroundFit === 'CONTAIN' ? 'contain' : 'cover',
+  } as CSSProperties;
+  return (
+    <section className={`event-hero event-hero--owner event-hero--${theme.templateKey}`} style={style}>
+      <div className="event-hero__content">
+        <span className="event-hero__kicker">{event.active ? dictionary.dashboard.yourEventLive : dictionary.dashboard.yourEventExpired}</span>
+        <h1>{event.names}</h1>
+        <RetentionNotice mediaDeleteAt={event.mediaDeleteAt} locale={locale} label={dictionary.dashboard.deleteNotice} />
+        <div className="event-hero__actions">
+          <a className="button event-main-button" target="_blank" href={`/${locale}/e/${event.slug}`}>{dictionary.dashboard.publicLink}</a>
+          <button className="button event-ghost-button" onClick={onShare}>{dictionary.dashboard.shareAndPrint}</button>
+          <button className="button event-ghost-button" onClick={onEditDesign}>{dictionary.dashboard.editDesign}</button>
+          <a className="button event-ghost-button" href={`${appConfig.apiBaseUrl}/owner/events/${event.id}/download-all`}>{dictionary.dashboard.downloadAll}</a>
+        </div>
+      </div>
+    </section>
   );
 }
 
