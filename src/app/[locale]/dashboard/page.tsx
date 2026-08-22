@@ -170,7 +170,7 @@ export default function OwnerDashboard() {
                   <div className="owner-media-grid">
                     {media.map((item) => (
                       <article key={item.id} className="owner-media-card">
-                        <div className="owner-media-preview">{item.url ? (item.mediaType === 'IMAGE' ? <img src={item.thumbnailUrl || item.url} alt="" /> : <video src={item.url} controls />) : <span>{item.status}</span>}</div>
+                        <div className="owner-media-preview">{item.url ? (item.mediaType === 'IMAGE' ? <img src={item.thumbnailUrl || item.url} alt="" /> : <video src={item.renditionUrl || item.url} poster={item.thumbnailUrl ?? undefined} controls />) : <span>{item.status}</span>}</div>
                         <div className="owner-media-info"><strong>{item.guestName || 'Guest'}</strong><small>{item.status} · {item.visibility}</small><div><button onClick={() => changeVisibility(item)}>{item.visibility === 'PUBLIC' ? 'Make private' : 'Make public'}</button>{item.url && <a href={item.url} download>Download</a>}<button onClick={() => removeMedia(item.id)}>{d.common.delete}</button></div></div>
                       </article>
                     ))}
