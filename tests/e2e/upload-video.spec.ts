@@ -22,7 +22,8 @@ test('an HEVC video from an iPhone uploads and appears with a poster and playabl
   // Panel auto-closes on success — no dialog to dismiss.
   await expect(page.locator('.upload-sheet')).toBeHidden({ timeout: 20000 });
 
-  await page.goto(`/en/e/${event.slug}`, { waitUntil: 'networkidle' });
+  // The homepage highlights preview only shows liked media now, so check the full album page instead.
+  await page.goto(`/en/e/${event.slug}/album`, { waitUntil: 'networkidle' });
   await page.waitForFunction(() => document.querySelectorAll('.masonry video').length > 0, { timeout: 20000 });
 
   const video = page.locator('.masonry video').first();

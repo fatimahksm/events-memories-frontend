@@ -8,7 +8,7 @@ import { AlbumSkeleton } from './AlbumSkeleton';
 import type { Dictionary } from '@/i18n/dictionary';
 import type { MediaItem, MediaPage } from '@/types/media';
 
-const PREVIEW_SIZE = 12;
+const PREVIEW_SIZE = 3;
 
 function visitorId() {
   if (typeof window === 'undefined') return '';
@@ -55,10 +55,14 @@ export function Album({ slug, locale, dictionary, refreshKey }: { slug: string; 
     } catch (err) { setError(errorMessage(err, dictionary.upload.genericError)); }
   }
 
+  const highlights = items.filter((item) => item.likes > 0).slice(0, 3);
+
+  if (!loading && !error && highlights.length === 0) return null;
+
   return <section id="album" className="album-section">
     <div className="section-heading"><span>ALBUM</span><h2>{dictionary.album.title}</h2><p>{dictionary.album.subtitle}</p></div>
     {error && <div className="notice notice--error"><strong>Unable to load</strong><span>{error}</span><button onClick={load}>{dictionary.common.retry}</button></div>}
-    {loading ? <AlbumSkeleton /> : items.length === 0 ? <div className="empty-card"><p>{dictionary.album.empty}</p></div> : <MediaGrid items={items} dictionary={dictionary} liked={liked} onLike={like} />}
-    {!loading && items.length > 0 && <Link className="button button--outline load-more" href={`/${locale}/e/${slug}/album`}>{dictionary.album.viewAll}{totalElements > items.length ? ` (${totalElements})` : ''}</Link>}
+    {loading ? <AlbumSkeleton /> : <MediaGrid items={highlights} dictionary={dictionary} liked={liked} onLike={like} />}
+    {!loading && highlights.length > 0 && <Link className="button button--outline load-more" href={`/${locale}/e/${slug}/album`}>{dictionary.album.viewAll}{totalElements > highlights.length ? ` (${totalElements})` : ''}</Link>}
   </section>;
 }

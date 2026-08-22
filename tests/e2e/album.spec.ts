@@ -18,8 +18,9 @@ test('the public event page links "View album" to a dedicated, paginated album p
 
   await page.goto(`/en/e/${event.slug}`, { waitUntil: 'networkidle' });
 
-  await expect(page.locator('#album')).toBeVisible();
-  await expect(page.locator('#album .empty-card')).toBeVisible();
+  // The homepage highlights preview only ever shows liked media, so with nothing
+  // liked yet it renders nothing at all — "View album" lives in the hero, unaffected.
+  await expect(page.locator('#album')).toHaveCount(0);
 
   await page.click('a.event-ghost-button:has-text("View album")');
   await page.waitForURL('**/album', { timeout: 10000 });
