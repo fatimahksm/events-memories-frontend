@@ -18,7 +18,7 @@ export default async function PrivacyPage({ params }: { params: Promise<{ locale
         <h1>Privacy — how this product handles data today</h1>
 
         <h2>What's collected</h2>
-        <p>When a guest uploads to an event album: the photo or video file itself, an optional display name they type in, and whether they marked it public or private. Liking a photo is tied to a random identifier generated in the guest's browser, not to any personal account. Event owners and the Super Admin have an email address and a password (owners can also sign in via a private link with no password).</p>
+        <p>When a guest uploads to an event album: the photo or video file itself, an optional display name they type in, and whether they marked it public or private. Liking a photo is tied to a random identifier generated in the guest's browser, not to any personal account. Event owners and the Super Admin have an email address and a password, and sign in with them the same way.</p>
 
         <h2>Where it's stored</h2>
         <p>Media files are stored in Cloudflare R2 (or, in local development, on the server's own disk). Account and event information is stored in a PostgreSQL database. Photos and videos are scanned for malware before they become visible in an album.</p>
