@@ -1,5 +1,9 @@
 const required = (value: string | undefined, fallback: string) => value?.trim() || fallback;
 const asNumber = (value: string | undefined, fallback: number) => {
+  // Number('') is 0, not NaN — an env var that's set but left blank (e.g. a Vercel
+  // "detected" var nobody filled in) would silently become a real 0 instead of falling
+  // back, which is how one selected file once tripped a "too many files" (max 0) error.
+  if (!value?.trim()) return fallback;
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : fallback;
 };
