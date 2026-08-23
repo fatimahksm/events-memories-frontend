@@ -10,6 +10,10 @@ export const appConfig = {
   // cross-site, which Safari blocks outright. Only override this for a setup that isn't
   // proxied through this Next.js app at all.
   apiBaseUrl: required(process.env.NEXT_PUBLIC_API_BASE_URL, '/api'),
+  // Server Components run their fetch() on the server, where a relative URL has no page
+  // to resolve against and throws — they need the real backend origin directly. Mirrors
+  // BACKEND_ORIGIN, the same env var next.config.ts's rewrite proxy uses.
+  serverApiBaseUrl: `${required(process.env.BACKEND_ORIGIN, 'http://localhost:8080')}/api`,
   defaultLocale: required(process.env.NEXT_PUBLIC_DEFAULT_LOCALE, 'en'),
   requestTimeoutMs: asNumber(process.env.NEXT_PUBLIC_REQUEST_TIMEOUT_MS, 20000),
   uploadTimeoutMs: asNumber(process.env.NEXT_PUBLIC_UPLOAD_TIMEOUT_MS, 120000),

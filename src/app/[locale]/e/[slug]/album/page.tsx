@@ -6,7 +6,7 @@ import { appConfig } from '@/config/app-config';
 import type { PublicEvent } from '@/types/event';
 
 async function getEvent(slug: string): Promise<PublicEvent | null> {
-  const response = await fetch(`${appConfig.apiBaseUrl}/public/events/${slug}`, { cache: 'no-store' });
+  const response = await fetch(`${appConfig.serverApiBaseUrl}/public/events/${slug}`, { cache: 'no-store' });
   if (response.status === 404 || response.status === 410) return null;
   if (!response.ok) throw new Error('EVENT_FETCH_FAILED');
   return response.json();
